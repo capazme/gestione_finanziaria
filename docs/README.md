@@ -1,0 +1,289 @@
+# Sistema di Gestione Finanziaria e Immobiliare
+
+## 🎯 Obiettivo
+
+Sistema Python per tracciare finanze personali e rendimenti/costi di proprietà immobiliari, con focus su:
+
+* Cash flow personale
+* Redditività immobili
+* Preparazione dati per dichiarazione dei redditi
+
+## 🚀 Quick Start
+
+### 1. Setup Ambiente
+
+```bash
+# Clona il repository
+git clone [URL_REPOSITORY]
+cd gestione_finanziaria
+
+# Crea virtual environment
+python -m venv venv
+
+# Attiva virtual environment
+# Windows
+venv\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
+
+# Installa dipendenze (per ora solo standard library)
+pip install -r requirements.txt
+```
+
+### 2. Inizializza Database
+
+```python
+from database.connection import init_database
+init_database()  # Crea database e tabelle
+```
+
+### 3. Primo Utilizzo
+
+```python
+# Esempio: aggiungi un conto
+from models import ContoFinanziario, TipoConto
+from repositories.conto_repository import ContoRepository
+
+conto = ContoFinanziario(
+    nome_conto="Conto Corrente Principale",
+    saldo_iniziale=5000.0,
+    tipo_conto=TipoConto.BANCARIO
+)
+
+repo = ContoRepository()
+conto_salvato = repo.create(conto)
+print(f"Conto creato con ID: {conto_salvato.id_conto}")
+```
+
+## 📁 Struttura Progetto
+
+```
+gestione_finanziaria/
+├── src/
+│   ├── models/              # Dataclasses delle entità
+│   ├── database/            # Gestione connessione e schema
+│   ├── repositories/        # Layer di accesso ai dati
+│   ├── services/            # Logica di business
+│   ├── cli/                 # Interfaccia command line
+│   └── config/              # Configurazioni
+├── tests/                   # Test unitari e integrazione
+├── data/                    # Database SQLite e backups
+└── docs/                    # Documentazione
+```
+
+## 🏗️ Architettura
+
+### Layer Architecture
+
+1. **Models** : Dataclasses Python con validazione
+2. **Database** : SQLite con gestione transazioni
+3. **Repository** : Pattern repository per CRUD
+4. **Services** : Business logic (calcoli, report)
+5. **CLI** : Interfaccia utente testuale
+
+### Design Patterns
+
+* **Repository Pattern** : Astrazione accesso dati
+* **Singleton** : Connessione database
+* **Context Manager** : Gestione transazioni
+* **Factory** : Creazione categorie per proprietà
+
+## 📊 Modello Dati
+
+### Entità Principali
+
+1. **Proprietà** : Immobili posseduti o in affitto
+2. **ContoFinanziario** : Conti bancari, risparmio, etc.
+3. **CategoriaTransazione** : Classificazione movimenti
+4. **Transazione** : Movimenti finanziari
+
+### Relazioni
+
+* Transazione → Categoria (N:1)
+* Transazione → Conto (N:1)
+* Transazione → Proprietà (N:0..1)
+
+## 💻 Esempi di Codice
+
+### Gestione Proprietà
+
+```python
+from models import Proprieta, TipoProprieta
+from repositories.proprieta_repository import ProprietaRepository
+from datetime import date
+
+# Crea proprietà affittata
+casa = Proprieta(
+    nome_o_indirizzo_breve="Casa Via Rossi",
+    tipo=TipoProprieta.POSSESSO_AFFITTATA,
+    data_acquisizione_o_inizio_contratto_affitto=date(2020, 1, 1),
+    valore_acquisto_o_stima_attuale=250000,
+    canone_affitto_mensile_attivo=1200
+)
+
+repo = ProprietaRepository()
+casa_salvata = repo.create(casa)
+
+# Calcola rendimento
+rendimento = casa_salvata.calcola_rendimento_annuo_lordo()
+print(f"Rendimento annuo: {rendimento:.2f}%")
+```
+
+### Inserimento Transazione
+
+```python
+from models import Transazione, TipoFlusso
+from repositories.transazione_repository import TransazioneRepository
+from services.saldo_calculator import SaldoCalculator
+
+# Registra affitto incassato
+transazione = Transazione(
+    data=date.today(),
+    importo=1200.0,  # Positivo = entrata
+    descrizione="Affitto gennaio Casa Via Rossi",
+    id_categoria=5,  # ID categoria "Affitto Incassato"
+    id_conto_finanziario=1,  # ID conto corrente
+    id_proprieta_associata=casa_salvata.id_proprieta,
+    tipo_flusso=TipoFlusso.IMMOBILIARE,
+    flag_deducibile_o_rilevante_fiscalmente=True
+)
+
+repo = TransazioneRepository()
+trans_salvata = repo.create(transazione)
+
+# Aggiorna saldo conto
+calculator = SaldoCalculator()
+calculator.aggiorna_saldo_dopo_transazione(trans_salvata)
+```
+
+### Generazione Report
+
+```python
+from services.report_generator import ReportGenerator
+from datetime import date
+
+generator = ReportGenerator()
+
+# Cash flow personale mensile
+cash_flow = generator.generate_cash_flow_personale(
+    mese=1, 
+    anno=2025
+)
+print(f"Entrate: €{cash_flow['totale_entrate']:.2f}")
+print(f"Uscite: €{cash_flow['totale_uscite']:.2f}")
+print(f"Risparmio: €{cash_flow['risparmio']:.2f}")
+
+# P&L proprietà
+pl = generator.generate_pl_proprieta(
+    id_proprieta=casa_salvata.id_proprieta,
+    anno=2025
+)
+print(f"Ricavi affitti: €{pl['ricavi_affitti']:.2f}")
+print(f"Costi totali: €{pl['costi_totali']:.2f}")
+print(f"Margine: €{pl['margine_operativo']:.2f}")
+```
+
+## 🔧 Configurazione
+
+### Database
+
+Il database SQLite viene creato automaticamente in `data/database.db`.
+Per usare un percorso diverso:
+
+```python
+from database.connection import DatabaseConfig
+config = DatabaseConfig(db_path="/percorso/custom/database.db")
+```
+
+### Logging
+
+```python
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+```
+
+## 🧪 Testing
+
+```bash
+# Esegui tutti i test
+python -m pytest
+
+# Test con coverage
+python -m pytest --cov=src
+
+# Test specifici
+python -m pytest tests/test_models.py
+```
+
+## 📈 Prossimi Passi (Post-MVP)
+
+1. **Import/Export**
+   * Import CSV transazioni bancarie
+   * Export report Excel/PDF
+2. **Automazioni**
+   * Calcolo automatico categorie
+   * Notifiche scadenze
+   * Reconciliazione conti
+3. **Analisi Avanzate**
+   * Grafici e trend
+   * Proiezioni cash flow
+   * Ottimizzazione fiscale
+4. **Web Interface**
+   * API REST con FastAPI
+   * Dashboard React
+   * Multi-utente
+
+## 🤝 Contribuire
+
+1. Segui la roadmap dettagliata in `docs/roadmap.md`
+2. Usa type hints e docstrings
+3. Scrivi test per nuove funzionalità
+4. Mantieni il codice PEP8 compliant
+
+## 📝 Note per l'Agente AI
+
+### Priorità Implementazione
+
+1. **Modelli e Database** (completare tutti i file in `src/models/` e `src/database/`)
+2. **Repository CRUD** (implementare tutti i repository seguendo il pattern)
+3. **Business Logic** (servizi per calcoli e validazioni)
+4. **Report Core** (4 report essenziali richiesti)
+5. **CLI Base** (menu navigabile per operazioni CRUD)
+
+### Best Practices da Seguire
+
+* **Type Safety** : Usa sempre type hints
+* **Validation** : Valida input in modelli e repository
+* **Error Handling** : Gestisci errori con messaggi chiari
+* **Logging** : Log operazioni importanti
+* **Testing** : Scrivi test mentre implementi
+
+### Anti-Pattern da Evitare
+
+* Non mettere business logic nei repository
+* Non accedere direttamente al DB fuori dai repository
+* Non modificare saldi manualmente (usa SaldoCalculator)
+* Non dimenticare transazioni atomiche per operazioni multiple
+
+### Suggerimenti Performance
+
+* Usa indici DB già definiti nello schema
+* Batch operations per import massivi
+* Cache per report computazionalmente pesanti
+* Paginazione per liste lunghe in CLI
+
+## 📞 Supporto
+
+Per domande sull'architettura o decisioni di design, riferirsi a:
+
+* Schema SQL in `src/database/schema.sql`
+* Modelli in `src/models/models.py`
+* Pattern esempi in `src/repositories/`
+
+---
+
+**Buon sviluppo!** 🚀 Il sistema è progettato per essere esteso facilmente.
+Segui la roadmap e in poche ore avrai un MVP funzionante.

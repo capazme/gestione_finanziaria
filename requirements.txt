@@ -1,0 +1,17 @@
+mypy==1.7.1
+colorama==0.4.6
+pdfplumber==0.10.3
+pytest==7.4.4
+
+# CLI enhancement (opzionale per MVP)
+# click==8.1.7
+# rich==13.7.0  # Per output colorato e tabelle
+
+# Future: per export report
+# openpyxl==3.1.2  # Excel export
+# reportlab==4.0.7  # PDF generation
+# matplotlib==3.8.2  # Grafici
+
+# Future: per web API
+# fastapi==0.104.1
+# uvicorn==0.24.0

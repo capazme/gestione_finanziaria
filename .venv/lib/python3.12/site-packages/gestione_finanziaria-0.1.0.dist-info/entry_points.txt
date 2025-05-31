@@ -1,0 +1,2 @@
+[console_scripts]
+gestfin = src.cli.main:menu_principale
